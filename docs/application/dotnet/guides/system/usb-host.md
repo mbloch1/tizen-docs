@@ -58,21 +58,18 @@ To enable your application to use the USB host functionality:
 
 To begin working with a device, you must find it in the device list.
 
-1. Get the device list:
+1. Get the (possibly filtered) device list:
 
    ```csharp
    var usb = new UsbManager();
-   var devices = usb.AvailableDevices();
-   foreach (UsbDevice dev in devices) {
+   foreach (var dev in usb.AvailableDevices.Where(...)) {
        ...
    ```
 
 
 2. Gather information about the device by inspecting `UsbDevice` properties.
 
-   Various USB Host API functions allow you to get some basic information about the USB devices in the device list. You can get values, such as vendor ID or product ID, from the descriptors sent by the device. By checking the device information, you can select a device suitable for your communication needs. Usually, the USB device vendor ID and product ID are used to uniquely identify the device.
-
-   All the USB Host API functions can operate on a device even if it has not been opened.
+   Various USB Host API functions allow you to get some basic information about the USB devices in the device list. You can get values, such as vendor ID or product ID, from the descriptors sent by the device. By checking the device information, you can select a device suitable for your communication needs. Usually, the USB device vendor ID and product ID are used to uniquely identify the device. Most USB Host API functions can only operate on a device if it has been opened.
 
 
 3. Open the device.
@@ -80,10 +77,9 @@ To begin working with a device, you must find it in the device list.
    After the device is uniquely identified and you have found the one you need, open it for further use:
 
    ```csharp
-   foreach (UsbDevice dev in devices) {
-       if (dev.UsbDeviceInformation.VendorId == 0x1234 && dev.UsbDeviceInformation.ProductId == 0x5678) {
-	   try {
-               dev.Open();
+   var dev = usb.AvailableDevices.Single(x => x.DeviceInformation.ProductId == 123 && x.DeviceInformation.VendorId == 456);
+   try {
+       dev.Open();
    ```
 
 4. While the device is open, you can get strings from it.
@@ -91,8 +87,7 @@ To begin working with a device, you must find it in the device list.
    Identify the device using strings, such as the string associated with the manufacturer.
 
    ```csharp
-   var str = dev.Strings;
-   if (str.Manufacturer == "Samsung") {
+   if (device.Strings.Manufacturer == "Samsung") {
        ...
    ```
 
@@ -122,6 +117,7 @@ Programs which are dedicated for one specific device often hardcode the interfac
 
    ```csharp
    var device = manager.AvailableDevices.Single(...);
+   device.Open();
    device.Configurations[123].SetAsActive();
 
    var interface = device.ActiveConfiguration.Interfaces.Single(...); // or .Interfaces[123]
@@ -131,6 +127,8 @@ Programs which are dedicated for one specific device often hardcode the interfac
    endpoint.Transfer(Encoding.ASCII.GetBytes("foobar"), 6, 1000); // timeout in ms
 
    interface.Release();
+   device.Close();
+   device.Dispose();
    ```
 
 
